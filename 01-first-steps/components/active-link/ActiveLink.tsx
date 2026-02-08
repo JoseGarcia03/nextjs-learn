@@ -15,4 +15,4 @@ const ActiveLink = ({ path, text }: Props) => {
   )
 }
 
-export default ActiveLink 
+export default ActiveLink  
