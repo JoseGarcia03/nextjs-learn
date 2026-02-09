@@ -1,23 +1,29 @@
-import { Pokemon } from "@/pokemons";
+import { Pokemon, PokemonsResponse } from "@/pokemons";
 import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ name: string }>;
 }
 
-const getPokemon = async(id: string): Promise<Pokemon> => {
+export async function generateStaticParams() {
+  const data: PokemonsResponse = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=151`)
+    .then(res => res.json());
+
+  const static151Pokemons = data.results.map(pokemon => ({ name: pokemon.name }));
+
+  return static151Pokemons;
+}
+
+const getPokemon = async (name: string): Promise<Pokemon> => {
   try {
-    const pokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${ id }`, {
-      cache: 'force-cache', //TODO: Cambiar esto en un futuro
+    const pokemon: Pokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`, {
       next: {
-        revalidate: 60 * 60 * 30 * 6
+        revalidate: 86400
       }
-    }).then( resp => resp.json())
-  
-    console.log('Se cargo: ', pokemon.name)
-  
+    }).then(resp => resp.json())
+
     return pokemon;
   } catch (error) {
     notFound();
@@ -25,20 +31,20 @@ const getPokemon = async(id: string): Promise<Pokemon> => {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const { id: idPokemon, name } = await getPokemon( id );
+  const { name } = await params;
+  const { id } = await getPokemon(name);
 
   return {
-    title: `#${ idPokemon } - ${ name }`,
-    description: `Página de pokemon #${ idPokemon }`
+    title: `#${id} - ${name}`,
+    description: `Página de pokemon #${id}`
   }
 }
 
 export default async function PokemonPage({ params }: Props) {
-  const { id } = await params;
+  const { name } = await params;
 
-  const pokemon = await getPokemon(id);
-  
+  const pokemon = await getPokemon(name);
+
   return (
     <div className="flex mt-5 flex-col items-center text-slate-800">
       <div className="relative flex flex-col items-center rounded-[20px] w-175 mx-auto bg-white bg-clip-border  shadow-lg  p-3">
